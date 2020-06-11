@@ -1,0 +1,3 @@
+[submodule "bluetoothAction"]
+	path = bluetoothAction
+	url = git@github.com:Gabriellgpc/bluetoothAction.git
