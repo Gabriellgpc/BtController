@@ -1,5 +1,7 @@
+#include <locale>         // std::locale, std::toupper
+#include <limits>       // std::numeric_limits
 #include <string>
-#include <fstream>
+#include <fstream>        //ofstream
 #include <iostream>          //cout, cerr, cin
 #include <cstdio>            //printf
 #include <unistd.h>          //sleep
@@ -9,74 +11,12 @@
 #include "bluetoothAction/bluetoothAction.h"
 #include "btcontroller.h"
 
-void saveToFile(encoder_data_t vec_data[], const int size, const float timeout, const double omegaRef, const string &fileName);
-
-void bytes2float(const uint8_t *bitstream, float*f, uint32_t num_float)
-{
-  memcpy((float*)bitstream, f, num_float*sizeof(float));
-}
-
-void float2bytes(const float*f, uint8_t *bitstream, uint32_t num_float)
-{
-  memcpy((uint8_t*)f, bitstream, num_float*sizeof(float));
-}
-
-void encodeFloat(const float* vec_f, uint8_t *bitstream)
-{
-  uint16_t ref_b[2];
-
-	ref_b[0] = (!F_IS_NEG(vec_f[0]) << 15)  | (uint16_t)(ABS_F(vec_f[0])*32767.0);
-  ref_b[1]= (!F_IS_NEG(vec_f[1]) << 15)   | (uint16_t)(ABS_F(vec_f[1])*32767.0);
-
-  bitstream[0] = (ref_b[0] & 0xFF00) >> 8;
-  bitstream[1] = (ref_b[0] & 0x00FF);
-  bitstream[2] = (ref_b[1] & 0xFF00) >> 8;
-  bitstream[3] = (ref_b[1] & 0x00FF);
-}
-
-
-void _printMainMenu()
-{
-  printf("****************MENU DE AÇÕES*************\n");
-  printf("%d -> PEDIR OMEGAS ATUAIS\n", OPTION::_rec_omegas);
-  printf("************************************\n");
-  printf("%d -> CONECTAR\n",OPTION::_connect);
-  printf("%d -> DESCONECTAR\n",OPTION::_disconnect);
-  printf("%d -> PING\n",OPTION::_ping);
-  printf("************************************\n");
-  printf("%d -> ENVIAR REFERÊNCIAS\n",OPTION::_send_ref);
-  printf("%d -> ENVIAR PWM\n",OPTION::_send_pwm);
-  printf("************************************\n");
-  // printf("%d -> ALTERAR Kp\n", OPTION::_send_kp);
-  printf("%d -> CALIBRAR CONTROLADOR\n",OPTION::_calibration);
-  printf("%d -> IDENTIFICAÇÃO\n",OPTION::_identify);
-  printf("%d -> VISUALIZAR GRAFICOS\n",OPTION::_graphic);
-  printf("%d -> PEDIR DADOS DA CALIBRACAO\n",OPTION::_rec_coef);
-  printf("************************************\n");
-  printf("%d -> ENCERRAR O PROGRAMA\n",OPTION::_close);
-};
-
-void _pause(const char* msg = ""){
-  printf("%s\n(PRESSIONE QUALQUER TECLA PARA CONTINUAR)\n", msg);
-  cin.ignore(1,'\n');
-  cin.get();
-}
-
-void _printListMACs(){
-  printf("****************MACs Conhecidos*************\n");
-  vector<string> addrs = btAction.getDest();
-  for(int i = 0; i < (int)addrs.size(); i++)
-  {
-    printf("%d -> Robo_%d = %s\n",i, i, addrs[i].c_str());
-  }
-};
-
 int main(int argc, char** argv)
 {
   double  time_stemp[2];
   uint8_t *bitstream;
   int     idBt = -1;
-  int     choice;
+  int choice = 0;
 
   btAction.setBluetoothAddr(MAC_ESP_TEST);
   btAction.setBluetoothAddr(MAC_ESP_ROBO_1);
@@ -84,15 +24,16 @@ int main(int argc, char** argv)
   btAction.setBluetoothAddr(MAC_ESP_ROBO_3);
   btAction.setBluetoothAddr(MAC_ESP_ROBO_4);
 
-
   bool run = true;
   int  send = 0,rec = 0;
   while(run)
   {
-
     system("clear");
     _printMainMenu();
-    cin >> choice;
+    cout << "Escolha uma opção: ";
+    choice = cin.get();
+    choice = toupper(choice);
+    cin.ignore(numeric_limits<streamsize>::max(),'\n');
 
     if(idBt == -1 && (choice != _graphic &&
                       choice != _connect &&
@@ -102,7 +43,8 @@ int main(int argc, char** argv)
           continue;
     }
 
-    switch (choice){
+    switch (choice)
+    {
     case OPTION::_rec_omegas://solicitar omegas
     {
       bitstream = new uint8_t[1];
@@ -270,7 +212,7 @@ int main(int argc, char** argv)
       delete[] vec_data;
       break;
     }
-    case OPTION::_graphic://graficos
+    case OPTION::_graphic://graficos      
       system("python3 etc/_pyplotter.py");
     break;
     case OPTION::_rec_coef://dados da calibracao
@@ -300,6 +242,7 @@ int main(int argc, char** argv)
       run = false;
       break;
     default:
+      _pause("Comando não reconhecido");
       break;
     }
   }
