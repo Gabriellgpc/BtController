@@ -1,3 +1,5 @@
+#include "bluetoothAction/bluetoothAction.h"
+
 #define MAC_ESP_TEST   "30:AE:A4:3B:A4:26"
 #define MAC_ESP_ROBO_1 "30:AE:A4:20:0E:12"
 #define MAC_ESP_ROBO_2 "30:AE:A4:13:F8:AE"
@@ -19,13 +21,13 @@
 #define CMD_REF            0x0A
 #define CMD_CONTROL_SIGNAL 0x0B
 
+#define CMD_RESET          0x0E
 #define CMD_PING           0x0F
 
 #define RADIUS    1.5/100 //metros
 #define REDUCTION 30 //30x1
 
 using namespace std;
-
 BluetoothAction btAction;
 
 typedef struct
@@ -102,7 +104,8 @@ enum OPTION{
   _identify    = 'I',
   _graphic     = 'V',
   _rec_coef    = 'M',
-  _close       = 27
+  _reset       = '1',
+  _close       = 'Q'
 };
 
 void _printMainMenu()
@@ -117,19 +120,33 @@ void _printMainMenu()
   printf("R -> ENVIAR REFERÊNCIAS\n");
   printf("S -> ENVIAR PWM\n");
   printf("************************************\n");
-  // printf("%d -> ALTERAR Kp\n", OPTION::_send_kp);
   printf("T -> AUTO TUNNING\n");
   printf("I -> IDENTIFICAÇÃO\n");
   printf("V -> VISUALIZAR GRAFICOS\n");
   printf("M -> PEDIR DADOS DA CALIBRACAO\n");
   printf("************************************\n");
-  printf("ESQ -> ENCERRAR O PROGRAMA\n");
+  printf("1 -> RESETAR O MICROCONTROLADOR\n");
+  printf("Q -> ENCERRAR O PROGRAMA\n");
 };
+
+void _printParameters(const parameters_t& parameters)
+{
+  printf("Omega Max: %f rad/s = %f m/s\n", parameters.omegaMax, parameters.omegaMax*RADIUS/(REDUCTION));//reducao de 30 e 24 interrupcoes por volta
+  printf("Left  Front  => a = %f , b = %f \n", parameters.coef[0].ang, parameters.coef[0].lin);
+  printf("Left  Back   => a = %f , b = %f \n", parameters.coef[1].ang, parameters.coef[1].lin);
+  printf("Right Front  => a = %f , b = %f \n", parameters.coef[2].ang, parameters.coef[2].lin);
+  printf("Right Back   => a = %f , b = %f \n", parameters.coef[3].ang, parameters.coef[3].lin);
+  printf("Left  Kp_frente = %.12f, Kp_tras %.12f\n", parameters.Kp[0], parameters.Kp[1]);
+  printf("Right Kp_frente = %.12f, Kp_tras %.12f\n", parameters.Kp[2], parameters.Kp[3]);
+  printf("Left  K = %.12f\n", parameters.K[0]);
+  printf("Right K = %.12f\n", parameters.K[1]);
+  printf("Left  tau = %.12f\n", parameters.tau[0]);
+  printf("Right tau = %.12f\n", parameters.tau[1]);
+}
 
 void _pause(const char* msg = ""){
   printf("%s\n(PRESSIONE QUALQUER TECLA PARA CONTINUAR)\n", msg);
   cin.get();
-  cin.ignore(1,'\n');
 }
 
 void _printListMACs(){
@@ -140,3 +157,93 @@ void _printListMACs(){
     printf("%d -> Robo_%d = %s\n",i, i, addrs[i].c_str());
   }
 };
+
+// void _funcIdentify(const int& idBt )
+// {
+//   uint8_t *bitstream;
+//   double time_stemp[2];
+//   int rec, send, choice;
+//
+//   encoder_data_t *vec_data = NULL;
+//   double omegaRef;
+//   uint8_t motor, typeC;
+//   float setpoint;
+//   int size, sumRec = 0;
+//   char motorChoice;
+//   do{
+//     cout << "Motor ? (L -> Left \t R -> Right): ";
+//     motorChoice = cin.get();
+//     motorChoice = toupper(motorChoice);
+//   }while(motorChoice != 'L' && motorChoice != 'R');
+//
+//   cout << "Setpoint: ";
+//   cin >> setpoint;
+//
+//   cout << "Desabilitar controlador ? 0(nao), 1(sim): ";
+//   cin >> typeC;
+//
+//   bitstream  = new uint8_t[2 + 1*sizeof(float)];
+//
+//   bitstream[0]                   = CMD_HEAD | CMD_IDENTIFY;
+//   bitstream[1]                   = ((motor << 7)  | typeC) & 0b10000001;
+//   *(float*)&bitstream[2 + 0*sizeof(float)] = setpoint;
+//
+//   //envia comando para iniciar a identificação
+//   btAction.sendBluetoothMessage(idBt, bitstream, 2 + 1*sizeof(float));
+//   time_stemp[0] = omp_get_wtime();
+//
+//   printf("Esperando...\n");
+//   //aguarda receber a informação da quantidade de medições
+//   rec = btAction.recvBluetoothMessage(idBt, (uint8_t*)&size, sizeof(int), 10);
+//   if(rec == -1)
+//   {
+//     _pause("timeout! erro ao receber informacao do size");
+//     return;
+//   }
+//   else printf("Medicoes:%d\n", size);
+//   sumRec += rec;
+//   vec_data = new encoder_data_t[size];
+//   memset(vec_data, 0, size*sizeof(encoder_data_t));
+//   //aguarda receber a informação da quantidade de medições
+//   rec = btAction.recvBluetoothMessage(idBt, (uint8_t*)&omegaRef, sizeof(double), 10);
+//   if(rec == -1)
+//   {
+//     _pause("timeout! erro ao receber informacao do omega de referencia");
+//     return;
+//   }
+//   else printf("Omega ref:%lf\n", omegaRef);
+//   sumRec += rec;
+//
+//   int step = 20;
+//   for(int i = 0; i < size; i += step)
+//   {
+//     rec = btAction.recvBluetoothMessage(idBt, (uint8_t*)&vec_data[i], step*sizeof(encoder_data_t), 20);
+//     printf("Recebi:%d bytes\n", rec);
+//     if(rec == -1)
+//       puts("timeout!");
+//     sumRec += rec;
+//   }
+//   time_stemp[1] = omp_get_wtime();
+//   printf("Tempo decorrido: %f s\n", time_stemp[1] - time_stemp[0]);
+//
+//   printf("%d Bytes recebidos, deseja salvar ? (0/1)", sumRec);
+//   cin >> choice;
+//
+//   if(choice == 1)
+//   {
+//     char fileName[50];
+//     cout << "Que nome devo colocar no arquivo ? ";
+//     scanf("%50s", fileName);
+//
+//     saveToFile(vec_data, size, 2.0, omegaRef, string(fileName));
+//     cout << "Salvando...\n";
+//     printf("Salvo! Em: %s\n", (string("etc/") + string(fileName)).c_str());
+//     _pause();
+//   }else{
+//     printf("Tudo bem então...\n");
+//     _pause();
+//   }
+//
+//   delete[] bitstream;
+//   delete[] vec_data;
+// }
