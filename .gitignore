@@ -2,3 +2,4 @@ backup*
 btcontroller
 *.o
 build
+teste.cpp
