@@ -139,7 +139,7 @@ int main(int argc, char** argv)
         break;
       case OPTION::_identify://identificar
       {
-        // _funcIdentify(idBt);
+        _funcIdentify(idBt);
         break;
       }
       case OPTION::_graphic://graficos

@@ -198,8 +198,9 @@ void _printListMACs(){
   }
 };
 
-// void _funcIdentify(const int& idBt )
-// {
+void _funcIdentify(const int& idBt)
+{
+  
 //   uint8_t *bitstream;
 //   double time_stemp[2];
 //   int rec, send, choice;
@@ -286,4 +287,4 @@ void _printListMACs(){
 //
 //   delete[] bitstream;
 //   delete[] vec_data;
-// }
+}
