@@ -3,3 +3,4 @@ btcontroller
 *.o
 build
 teste.cpp
+main
