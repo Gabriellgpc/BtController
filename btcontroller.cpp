@@ -147,10 +147,10 @@ int main(int argc, char** argv)
       break;
       case OPTION::_rec_coef://dados da calibracao
         bitstream = new uint8_t[1];
-        parameters_t parameters;
+        parameters_t parameters[2];
         bitstream[0] = CMD_HEAD | CMD_REQ_CAL;
         btAction.sendBluetoothMessage(idBt, bitstream, 1*sizeof(uint8_t));
-        rec = btAction.recvBluetoothMessage(idBt, (uint8_t*)&parameters, sizeof(parameters_t), 5);
+        rec = btAction.recvBluetoothMessage(idBt, (uint8_t*)&parameters, 2*sizeof(parameters_t), 5);
         printf("Coeficientes da calibracao tamanho total:%d bytes\n", rec);
         _printParameters(parameters);
         _pause();

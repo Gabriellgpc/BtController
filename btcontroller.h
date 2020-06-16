@@ -30,14 +30,16 @@
 using namespace std;
 BluetoothAction btAction;
 
-typedef struct
+enum ROTATE_S
 {
-  double  rawOmega;  //ultimo omega medido, sem filtro
-  double  omega;     //omega filtrado
-  double  pOmega;    //predicted omega
-  double  kGain;     //kalman gain
-  double  p;      //preditec variance
-}encoder_data_t;
+  FRONT = 0,
+  BACK  = 1
+};
+enum MOTOR
+{
+  LEFT = 0,
+  RIGHT= 1
+};
 
 typedef struct
 {
@@ -47,12 +49,50 @@ typedef struct
 
 typedef struct
 {
-  double omegaMax;
-  double Kp[4];        //ganho do controlador
-  double K[2];         //ganho do sistema, motor esquerdo e direito
-  double tau[2];       //constante de tempo, motor esquerdo e direito
-  coefLine_t coef[4];
+  uint8_t *data;
+  uint32_t len;
+}bt_data_t;
+
+typedef struct
+{
+  double  rawOmega;  //ultimo omega medido, sem filtro
+  double  omega;     //omega filtrado
+  double  pOmega;    //predicted omega
+  double  kGain;     //kalman gain
+  double  p;         //preditec variance, incerteza da estimativa
+  double  r;         //measure variance, incerteza da medição
+}encoder_data_t;
+
+typedef struct{
+  double wss;
+  double tau;
+}input_encoder_t;
+
+typedef struct
+{
+  //Parâmetros natural do Sistema
+  double K;      //Ganho do sistema
+  double tau;    //Constante de tempo do sistema
+  // Controlador Proporcional e Forward
+  double Kp[2];  //Ganho do controlador proporcional, para cada sentido
+  // Coef. Angular == 1/K
+  // Coef. Linear  == Zona morta
+  coefLine_t coef[2];// Coef. das retas Omega x PWM para cada sentido de rotação
 }parameters_t;
+
+typedef struct
+{
+  //Velocidade máxima do robô
+  double omegaMax;
+  // Parametros dos motores
+  parameters_t params[2];
+}memory_data_t;
+
+typedef struct
+{
+  double dt;    //delta t desde considerando t0 como tempo onde que foi aplicado o input
+  encoder_data_t encoder;
+}export_data_t;
 
 string getDate()
 {
@@ -129,19 +169,19 @@ void _printMainMenu()
   printf("Q -> ENCERRAR O PROGRAMA\n");
 };
 
-void _printParameters(const parameters_t& parameters)
+void _printParameters(const parameters_t parameters[])
 {
-  printf("Omega Max: %f rad/s = %f m/s\n", parameters.omegaMax, parameters.omegaMax*RADIUS/(REDUCTION));//reducao de 30 e 24 interrupcoes por volta
-  printf("Left  Front  => a = %f , b = %f \n", parameters.coef[0].ang, parameters.coef[0].lin);
-  printf("Left  Back   => a = %f , b = %f \n", parameters.coef[1].ang, parameters.coef[1].lin);
-  printf("Right Front  => a = %f , b = %f \n", parameters.coef[2].ang, parameters.coef[2].lin);
-  printf("Right Back   => a = %f , b = %f \n", parameters.coef[3].ang, parameters.coef[3].lin);
-  printf("Left  Kp_frente = %.12f, Kp_tras %.12f\n", parameters.Kp[0], parameters.Kp[1]);
-  printf("Right Kp_frente = %.12f, Kp_tras %.12f\n", parameters.Kp[2], parameters.Kp[3]);
-  printf("Left  K = %.12f\n", parameters.K[0]);
-  printf("Right K = %.12f\n", parameters.K[1]);
-  printf("Left  tau = %.12f\n", parameters.tau[0]);
-  printf("Right tau = %.12f\n", parameters.tau[1]);
+  // printf("Omega Max: %f rad/s = %f m/s\n", parameters.omegaMax, parameters.omegaMax*RADIUS/(REDUCTION));//reducao de 30 e 24 interrupcoes por volta
+  printf("Left  Front  => a = %f , b = %f \n", parameters[0].coef[0].ang, parameters[0].coef[0].lin);
+  printf("Left  Back   => a = %f , b = %f \n", parameters[0].coef[1].ang, parameters[0].coef[1].lin);
+  printf("Right Front  => a = %f , b = %f \n", parameters[1].coef[0].ang, parameters[1].coef[0].lin);
+  printf("Right Back   => a = %f , b = %f \n", parameters[1].coef[1].ang, parameters[1].coef[1].lin);
+  printf("Left  Kp_frente = %.12f, Kp_tras %.12f\n", parameters[0].Kp[0], parameters[0].Kp[1]);
+  printf("Right Kp_frente = %.12f, Kp_tras %.12f\n", parameters[1].Kp[0], parameters[1].Kp[1]);
+  printf("Left  K = %.12f\n", parameters[0].K);
+  printf("Right K = %.12f\n", parameters[1].K);
+  printf("Left  tau = %.12f\n", parameters[0].tau);
+  printf("Right tau = %.12f\n", parameters[1].tau);
 }
 
 void _pause(const char* msg = ""){
