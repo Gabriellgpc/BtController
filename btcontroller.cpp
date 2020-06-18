@@ -219,9 +219,75 @@ void BtRemoteCtrl::_reqAutoCal()
   sendBluetoothMessage(idBt, bitstream, 1*sizeof(uint8_t));
   delete bitstream;
 }
+
+// func_identify(const bool motor, const bool controller, const float setpoint, const float stopTime)
 void BtRemoteCtrl::_reqIdentify()
 {
-  cout << "Falta fazer...\n";
+  uint8_t motor = 0, controller = 1;
+  float sp, stime = 2.0; //setpoint e stop time
+  double times[2];
+  import_data_t import;
+  int rec;
+
+  #define MEM_SIZE  (3 + 2*sizeof(float))
+  bitstream = new uint8_t[MEM_SIZE];
+  memset(bitstream, 0, MEM_SIZE);
+
+  // user input or static
+  sp = 1.0;
+
+  bitstream[0] = CMD_HEAD | CMD_IDENTIFY;
+  bitstream[1] = motor;
+  bitstream[2] = controller;
+  memcpy(bitstream + 3, (void*)&sp, sizeof(float));
+  memcpy(bitstream+3+sizeof(float), (void*)&stime, sizeof(float));
+  sendBluetoothMessage(idBt, bitstream, MEM_SIZE*sizeof(uint8_t));
+
+  import.motor = motor;
+  import.controller = controller;
+  import.setpoint=sp;
+
+  times[0] = omp_get_wtime();
+  rec = recvBluetoothMessage(idBt, (uint8_t*)&import.params, sizeof(parameters_t), 10);
+  if(rec < 0){
+    std::cerr << "Erro na leitura do bluetooth" << '\n';
+    _BtDisconnect();
+    return;
+  }
+  rec = recvBluetoothMessage(idBt, (uint8_t*)&import.OmegaMax, sizeof(double), 5);
+  if(rec < 0){
+    std::cerr << "Erro na leitura do bluetooth" << '\n';
+    _BtDisconnect();
+    return;
+  }
+  rec = recvBluetoothMessage(idBt, (uint8_t*)&import.size, sizeof(uint16_t), 5);
+  if(rec < 0){
+    std::cerr << "Erro na leitura do bluetooth" << '\n';
+    _BtDisconnect();
+    return;
+  }
+  cout << (int)import.size <<"Amostras\n";
+  import.datas = new export_data_t[import.size];
+  memset(import.datas, 0, import.size * sizeof(export_data_t));
+  cout << "Lendo stream de dados...\n";
+  for(int i = 0; i < import.size; i++)
+  {
+    rec = recvBluetoothMessage(idBt, (uint8_t*)&import.datas[i], sizeof(export_data_t), 20);
+    if(rec < 0){
+      std::cerr << "Erro na leitura do bluetooth" << '\n';
+      _BtDisconnect();
+      delete[] import.datas;
+      return;
+    }
+  }
+  cout << "Leitura completada com sucesso!\n";
+  times[1]= omp_get_wtime();
+  _saveToFile("teste", import);
+  cout << "A rotina levou "<< times[1] - times[0] << "s para ser concluída.\n";
+  _pause();
+
+  delete[] import.datas;
+  delete[] bitstream;
 }
 void BtRemoteCtrl::_graphic()
 {
@@ -262,6 +328,33 @@ void BtRemoteCtrl::_reqReset()
   }
 
   delete[] bitstream;
+}
+
+void BtRemoteCtrl::_saveToFile(const char* file, const import_data_t import)const
+{
+  string fileName;
+  ofstream arq;
+  fileName = string("etc/")+ string(file) +string(".csv");
+  arq.open(fileName);
+
+  arq << "MOTOR,CONTROLLER,SET_POINT,OMEGA_MAX,";
+  arq << "K,TAU,FORWARD_KP,BACK_KP,FORWARD_ANG_COEF,FORWARD_LIN_COEF,BACK_ANG_COEF,BACK_LIN_COEF,";
+  arq << "TIME,OMEGA_RAW,OMEGA_FILTERED,OMEGA_PREDICTED,K_GAIN,PREDIC_ERR,MEASURE_ERR";
+
+  for(int i = 0; i < import.size; i++)
+  {
+    arq << '\n';
+    arq << import.motor << ',' << import.controller << ',' << import.setpoint << ',' << import.OmegaMax << ',';
+    arq << import.params.K << ',' << import.params.tau << ',' << import.params.Kp[0] << ',' << import.params.Kp[1] << ',';
+    arq << import.params.coef[0].ang << ',' << import.params.coef[0].lin << ',';
+    arq << import.params.coef[1].ang << ',' << import.params.coef[1].lin << ',';
+    arq << import.datas[i].dt << ',';
+    arq << import.datas[i].encoder.rawOmega << ',' << import.datas[i].encoder.omega <<','<<import.datas[i].encoder.pOmega << ',';
+    arq << import.datas[i].encoder.kGain << ',' << import.datas[i].encoder.p << ',' << import.datas[i].encoder.r;
+  }
+
+  arq.close();
+  return;
 }
 
 void BtRemoteCtrl::_encodeFloat(const float left_f, const float right_f)

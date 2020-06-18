@@ -22,6 +22,15 @@ enum OPTION{
   _close       = 'Q'
 };
 
+struct import_data_t{
+  int motor, controller;
+  float setpoint;
+  parameters_t params;
+  double OmegaMax;
+  export_data_t *datas;
+  uint16_t size;
+};
+
 class BtRemoteCtrl: public BluetoothAction
 {
 private:
@@ -55,7 +64,7 @@ private:
   void _printParameters(const parameters_t parameters[])const;
   void _pause(const char* msg = "")const;
   void _printListMACs();
-  // void _saveToFile(const string &file, const void *data, const ) const;
+  void _saveToFile(const char* file, const import_data_t import)const;
   // propriedades
   std::thread tr_manager;
   uint8_t *bitstream;
