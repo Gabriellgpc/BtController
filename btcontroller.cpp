@@ -211,6 +211,7 @@ void BtRemoteCtrl::_reqAutoCal()
   bitstream = new uint8_t;
   bitstream[0] = CMD_HEAD | CMD_CALIBRATION;
   sendBluetoothMessage(idBt, bitstream, 1*sizeof(uint8_t));
+  _pause();
   delete bitstream;
 }
 
@@ -227,48 +228,51 @@ void BtRemoteCtrl::_reqIdentify()
   bitstream[0] = CMD_HEAD | CMD_IDENTIFY;
 
   // identify config.
-  import.motor = 0;
-  import.controller = 0;
   import.setpoint = 1.0;
 
-
-  bitstream[1] = import.motor;
-  bitstream[2] = import.controller;
-  memcpy(bitstream + 3, (void*)&import.setpoint, sizeof(float));
-  memcpy(bitstream+3+sizeof(float), (void*)&stime, sizeof(float));
-  sendBluetoothMessage(idBt, bitstream, MEM_SIZE*sizeof(uint8_t));
-
-  times[0] = omp_get_wtime();
-
-  if(read_bluetooth((uint8_t*)&import.params, sizeof(parameters_t), 5) == false){
-    delete[] bitstream;
-    return;
-  }
-  if(read_bluetooth((uint8_t*)&import.OmegaMax, sizeof(double), 2) == false){
-    delete[] bitstream;
-    return;
-  }
-  if(read_bluetooth((uint8_t*)&import.size, sizeof(uint16_t), 2) == false){
-    delete[] bitstream;
-    return;
-  }
-
-  cout << (int)import.size <<" amostras\n";
-  import.datas = new export_data_t[import.size];
-  memset(import.datas, 0, import.size * sizeof(export_data_t));
-  cout << "Recebendo:" << (int)import.size << " amostras ..." <<"\n";
-  for(int i = 0; i < import.size; i++)
+  for(import.motor = 0; import.motor < 2; import.motor++)
   {
-    if(read_bluetooth((uint8_t*)&import.datas[i], sizeof(export_data_t), 5) == false){
-      delete[] import.datas;
-      delete[] bitstream;
-      return;
+    for(import.controller = 0; import.controller < 2; import.controller++)
+    {
+      bitstream[1] = import.motor;
+      bitstream[2] = import.controller;
+      memcpy(bitstream + 3, (void*)&import.setpoint, sizeof(float));
+      memcpy(bitstream+3+sizeof(float), (void*)&stime, sizeof(float));
+      sendBluetoothMessage(idBt, bitstream, MEM_SIZE*sizeof(uint8_t));
+
+      times[0] = omp_get_wtime();
+
+      if(read_bluetooth((uint8_t*)&import.params, sizeof(parameters_t), 5) == false){
+        delete[] bitstream;
+        return;
+      }
+      if(read_bluetooth((uint8_t*)&import.OmegaMax, sizeof(double), 2) == false){
+        delete[] bitstream;
+        return;
+      }
+      if(read_bluetooth((uint8_t*)&import.size, sizeof(uint16_t), 2) == false){
+        delete[] bitstream;
+        return;
+      }
+
+      cout << (int)import.size <<" amostras\n";
+      import.datas = new export_data_t[import.size];
+      memset(import.datas, 0, import.size * sizeof(export_data_t));
+      cout << "Recebendo:" << (int)import.size << " amostras ..." <<"\n";
+      for(int i = 0; i < import.size; i++)
+      {
+        if(read_bluetooth((uint8_t*)&import.datas[i], sizeof(export_data_t), 5) == false){
+          delete[] import.datas;
+          delete[] bitstream;
+          return;
+        }
+      }
+      cout << "Leitura completada com sucesso!\n";
+      times[1]= omp_get_wtime();
+      _saveToFile("teste", import, (import.motor != 0) || (import.controller != 0));
+      cout << "A rotina levou "<< times[1] - times[0] << "s para ser concluída.\n";
     }
   }
-  cout << "Leitura completada com sucesso!\n";
-  times[1]= omp_get_wtime();
-  _saveToFile("teste", import, true);
-  cout << "A rotina levou "<< times[1] - times[0] << "s para ser concluída.\n";
   _pause();
 
   delete[] import.datas;
@@ -304,8 +308,8 @@ void BtRemoteCtrl::_reqReset()
     _BtDisconnect();
     _pause("Falha ao enviar o comando. Bluetooth Desconectado");
   }
-
   delete[] bitstream;
+  _pause();
 }
 
 void BtRemoteCtrl::_saveToFile(const char* file, const import_data_t import, bool append)const
