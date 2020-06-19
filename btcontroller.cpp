@@ -114,24 +114,18 @@ void BtRemoteCtrl::_manager()
 void BtRemoteCtrl::_reqOmegas()
 {
   double omegas[2];
-  int rec;
 
   bitstream = new uint8_t[1];
   bitstream[0] = CMD_HEAD | CMD_REQ_OMEGA;
 
   sendBluetoothMessage(idBt, bitstream, 1*sizeof(uint8_t));
-  rec = recvBluetoothMessage(idBt, (uint8_t*)omegas, 2*sizeof(double), 2);
-
-  if(rec != 2*sizeof(double))
-  {
-    std::cerr << "Erro na leitura do bluetooth ou timeout event ocorreu" << '\n';
-    _BtDisconnect();
+  if(read_bluetooth((uint8_t*)omegas, 2*sizeof(double)) == false){
+    delete[] bitstream;
     return;
   }
   printf("Left Omega:%f rad/s     Right Omega:%f rad/s\n", omegas[0], omegas[1]);
   printf("Left Speed:%f m/s   Right Speed:%f m/s\n", omegas[0]*RADIUS/REDUCTION, omegas[1]*RADIUS/REDUCTION);
   _pause();
-
   delete[] bitstream;
 }
 
@@ -223,66 +217,57 @@ void BtRemoteCtrl::_reqAutoCal()
 // func_identify(const bool motor, const bool controller, const float setpoint, const float stopTime)
 void BtRemoteCtrl::_reqIdentify()
 {
-  uint8_t motor = 0, controller = 1;
-  float sp, stime = 2.0; //setpoint e stop time
-  double times[2];
+  float stime = 2.0;
   import_data_t import;
-  int rec;
+  double times[2];
 
   #define MEM_SIZE  (3 + 2*sizeof(float))
   bitstream = new uint8_t[MEM_SIZE];
   memset(bitstream, 0, MEM_SIZE);
-
-  // user input or static
-  sp = 1.0;
-
   bitstream[0] = CMD_HEAD | CMD_IDENTIFY;
-  bitstream[1] = motor;
-  bitstream[2] = controller;
-  memcpy(bitstream + 3, (void*)&sp, sizeof(float));
+
+  // identify config.
+  import.motor = 0;
+  import.controller = 0;
+  import.setpoint = 1.0;
+
+
+  bitstream[1] = import.motor;
+  bitstream[2] = import.controller;
+  memcpy(bitstream + 3, (void*)&import.setpoint, sizeof(float));
   memcpy(bitstream+3+sizeof(float), (void*)&stime, sizeof(float));
   sendBluetoothMessage(idBt, bitstream, MEM_SIZE*sizeof(uint8_t));
 
-  import.motor = motor;
-  import.controller = controller;
-  import.setpoint=sp;
-
   times[0] = omp_get_wtime();
-  rec = recvBluetoothMessage(idBt, (uint8_t*)&import.params, sizeof(parameters_t), 10);
-  if(rec < 0){
-    std::cerr << "Erro na leitura do bluetooth" << '\n';
-    _BtDisconnect();
+
+  if(read_bluetooth((uint8_t*)&import.params, sizeof(parameters_t), 5) == false){
+    delete[] bitstream;
     return;
   }
-  rec = recvBluetoothMessage(idBt, (uint8_t*)&import.OmegaMax, sizeof(double), 5);
-  if(rec < 0){
-    std::cerr << "Erro na leitura do bluetooth" << '\n';
-    _BtDisconnect();
+  if(read_bluetooth((uint8_t*)&import.OmegaMax, sizeof(double), 2) == false){
+    delete[] bitstream;
     return;
   }
-  rec = recvBluetoothMessage(idBt, (uint8_t*)&import.size, sizeof(uint16_t), 5);
-  if(rec < 0){
-    std::cerr << "Erro na leitura do bluetooth" << '\n';
-    _BtDisconnect();
+  if(read_bluetooth((uint8_t*)&import.size, sizeof(uint16_t), 2) == false){
+    delete[] bitstream;
     return;
   }
-  cout << (int)import.size <<"Amostras\n";
+
+  cout << (int)import.size <<" amostras\n";
   import.datas = new export_data_t[import.size];
   memset(import.datas, 0, import.size * sizeof(export_data_t));
-  cout << "Lendo stream de dados...\n";
+  cout << "Recebendo:" << (int)import.size << " amostras ..." <<"\n";
   for(int i = 0; i < import.size; i++)
   {
-    rec = recvBluetoothMessage(idBt, (uint8_t*)&import.datas[i], sizeof(export_data_t), 20);
-    if(rec < 0){
-      std::cerr << "Erro na leitura do bluetooth" << '\n';
-      _BtDisconnect();
+    if(read_bluetooth((uint8_t*)&import.datas[i], sizeof(export_data_t), 5) == false){
       delete[] import.datas;
+      delete[] bitstream;
       return;
     }
   }
   cout << "Leitura completada com sucesso!\n";
   times[1]= omp_get_wtime();
-  _saveToFile("teste", import);
+  _saveToFile("teste", import, true);
   cout << "A rotina levou "<< times[1] - times[0] << "s para ser concluída.\n";
   _pause();
 
@@ -296,23 +281,16 @@ void BtRemoteCtrl::_graphic()
 }
 void BtRemoteCtrl::_reqParam()
 {
-  int rec;
-
   bitstream = new uint8_t[1];
   parameters_t parameters[2];
   bitstream[0] = CMD_HEAD | CMD_REQ_CAL;
   sendBluetoothMessage(idBt, bitstream, 1*sizeof(uint8_t));
-  rec = recvBluetoothMessage(idBt, (uint8_t*)&parameters, 2*sizeof(parameters_t), 5);
-
-  if(rec < 0){
-    std::cerr << "Erro na leitura do bluetooth" << '\n';
-    _BtDisconnect();
+  if(read_bluetooth((uint8_t*)&parameters, 2*sizeof(parameters_t)) == false){
+      delete[] bitstream;
+      return;
   }
-
-  printf("Coeficientes da calibracao tamanho total:%d bytes\n", rec);
   _printParameters(parameters);
   delete[] bitstream;
-
   _pause();
 }
 void BtRemoteCtrl::_reqReset()
@@ -330,16 +308,22 @@ void BtRemoteCtrl::_reqReset()
   delete[] bitstream;
 }
 
-void BtRemoteCtrl::_saveToFile(const char* file, const import_data_t import)const
+void BtRemoteCtrl::_saveToFile(const char* file, const import_data_t import, bool append)const
 {
   string fileName;
   ofstream arq;
   fileName = string("etc/")+ string(file) +string(".csv");
-  arq.open(fileName);
 
-  arq << "MOTOR,CONTROLLER,SET_POINT,OMEGA_MAX,";
-  arq << "K,TAU,FORWARD_KP,BACK_KP,FORWARD_ANG_COEF,FORWARD_LIN_COEF,BACK_ANG_COEF,BACK_LIN_COEF,";
-  arq << "TIME,OMEGA_RAW,OMEGA_FILTERED,OMEGA_PREDICTED,K_GAIN,PREDIC_ERR,MEASURE_ERR";
+  if(append)
+    arq.open(fileName , std::ofstream::app);
+  else
+    arq.open(fileName);
+
+  if(!append){
+    arq << "MOTOR,CONTROLLER,SET_POINT,OMEGA_MAX,";
+    arq << "K,TAU,FORWARD_KP,BACK_KP,FORWARD_ANG_COEF,FORWARD_LIN_COEF,BACK_ANG_COEF,BACK_LIN_COEF,";
+    arq << "TIME,OMEGA_RAW,OMEGA_FILTERED,OMEGA_PREDICTED,K_GAIN,PREDIC_ERR,MEASURE_ERR";
+  }
 
   for(int i = 0; i < import.size; i++)
   {
@@ -438,5 +422,18 @@ void BtRemoteCtrl::_printListMACs()
     printf("%d -> Robo_%d = %s\n",i, i, addrs[i].c_str());
   }
 };
+
+bool BtRemoteCtrl::read_bluetooth(uint8_t*msg, const size_t lengthMax, const int timeout)
+{
+  int rec;
+  if((msg == NULL) || (lengthMax == 0) || (idBt < 0))return false;
+  rec = recvBluetoothMessage(idBt, msg, lengthMax, timeout);
+  if(rec < 0){
+    cerr << "Erro na leitura do bluetooth\n";
+    _BtDisconnect();
+    return false;
+  }
+  return true;
+}
 
 /***********************************************************************/

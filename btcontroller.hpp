@@ -23,8 +23,10 @@ enum OPTION{
 };
 
 struct import_data_t{
+  //config
   int motor, controller;
   float setpoint;
+  //import from microC
   parameters_t params;
   double OmegaMax;
   export_data_t *datas;
@@ -33,8 +35,6 @@ struct import_data_t{
 
 class BtRemoteCtrl: public BluetoothAction
 {
-private:
-
 public:
   void start();
   void stop();
@@ -64,7 +64,8 @@ private:
   void _printParameters(const parameters_t parameters[])const;
   void _pause(const char* msg = "")const;
   void _printListMACs();
-  void _saveToFile(const char* file, const import_data_t import)const;
+  void _saveToFile(const char* file, const import_data_t import, bool append = false)const;
+  bool read_bluetooth(uint8_t*msg = NULL, const size_t lengthMax = 0, const int timeout = 1);
   // propriedades
   std::thread tr_manager;
   uint8_t *bitstream;
@@ -72,6 +73,5 @@ private:
   int idBt;
   // friends
   friend void func_manager(void*X);
-
 };
 #endif
