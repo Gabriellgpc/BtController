@@ -52,7 +52,7 @@ private:
   void _sendRef();
   void _sendPwm();
   void _reqAutoCal();
-  void _reqIdentify();
+  void _reqIdentify(bool motor, float ref = 1.0, bool controller = false,const char* fileName = "output");
   void _graphic();
   void _reqParam();
   void _reqReset();

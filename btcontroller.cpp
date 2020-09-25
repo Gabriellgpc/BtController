@@ -90,7 +90,13 @@ void BtRemoteCtrl::_manager()
         _reqAutoCal();
       break;
       case OPTION::_identify://identificar
-        _reqIdentify();
+        for(int i = 0; i < 10; i++)
+        {
+          std::string name = "motor_esquerdo_" + std::to_string(i);
+          _reqIdentify(0,1.0, false, name.c_str());
+          name = "motor_direito_" + std::to_string(i);
+          _reqIdentify(1,1.0, false, name.c_str());
+        }
       break;
       case OPTION::_graphic://graficos
         _graphic();
@@ -215,7 +221,7 @@ void BtRemoteCtrl::_reqAutoCal()
 }
 
 // func_identify(const bool motor, const bool controller, const float setpoint, const float stopTime)
-void BtRemoteCtrl::_reqIdentify()
+void BtRemoteCtrl::_reqIdentify(bool motor, float ref, bool controller, const char* fileName)
 {
   float stime = 2.0;
   import_data_t import;
@@ -227,11 +233,11 @@ void BtRemoteCtrl::_reqIdentify()
   bitstream[0] = CMD_HEAD | CMD_IDENTIFY;
 
   // identify config.
-  import.motor = 0;
-  import.controller = 0;
-  import.setpoint = 1.0;
+  import.motor = motor;
+  import.controller = controller;
+  import.setpoint = ref;
 
-
+  // sending identification request
   bitstream[1] = import.motor;
   bitstream[2] = import.controller;
   memcpy(bitstream + 3, (void*)&import.setpoint, sizeof(float));
@@ -267,9 +273,9 @@ void BtRemoteCtrl::_reqIdentify()
   }
   cout << "Leitura completada com sucesso!\n";
   times[1]= omp_get_wtime();
-  _saveToFile("teste", import, true);
+  _saveToFile(fileName, import, false);
   cout << "A rotina levou "<< times[1] - times[0] << "s para ser concluída.\n";
-  _pause();
+  // _pause();
 
   delete[] import.datas;
   delete[] bitstream;
