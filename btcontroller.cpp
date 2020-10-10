@@ -90,13 +90,15 @@ void BtRemoteCtrl::_manager()
         _reqAutoCal();
       break;
       case OPTION::_identify://identificar
-        for(int i = 0; i < 10; i++)
-        {
-          std::string name = "motor_esquerdo_" + std::to_string(i);
-          _reqIdentify(0,1.0, false, name.c_str());
-          name = "motor_direito_" + std::to_string(i);
-          _reqIdentify(1,1.0, false, name.c_str());
-        }
+      _reqIdentify(1,1.0, false, "teste_motor_direito");
+      _reqIdentify(0,1.0, false, "teste_motor_esquerdo");
+        // for(int i = 0; i < 10; i++)
+        // {
+        //   std::string name = "motor_esquerdo_" + std::to_string(i);
+        //   _reqIdentify(0,1.0, false, name.c_str());
+        //   name = "motor_direito_" + std::to_string(i);
+        //   _reqIdentify(1,1.0, false, name.c_str());
+        // }
       break;
       case OPTION::_graphic://graficos
         _graphic();
