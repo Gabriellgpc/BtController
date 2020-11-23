@@ -93,7 +93,7 @@ void BtRemoteCtrl::_manager()
     case OPTION::_identify: //identificar
     {
       std::cout << "Identify!\n";
-      std::string experimento("_experimento_05");
+      std::string experimento("_experimento_06");
       std::string motor_str, sp_str;
       std::string file_name_control, file_name_no_control;
 
