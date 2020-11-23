@@ -55,7 +55,7 @@ void BtRemoteCtrl::_manager()
   int choice;
   while (this->running)
   {
-    
+
     // cin.ignore(256, '\n');
     choice = _mainMenu();
     if (idBt == -1 && (choice != OPTION::_graphic &&
@@ -91,37 +91,43 @@ void BtRemoteCtrl::_manager()
       _reqAutoCal();
       break;
     case OPTION::_identify: //identificar
-    { 
+    {
       std::cout << "Identify!\n";
-      std::string experimento("_experimento_01");
+      std::string experimento("_experimento_05");
       std::string motor_str, sp_str;
       std::string file_name_control, file_name_no_control;
-      /*
-      for(float s = -1.0; s < 2.0; s += 2)
+
+      for (float s = 1.0; s >= -1.0; s -= 2)
       {
-        for(int m = 0; m < 2; m++)
+        for (float sp = 1.0; sp >= 0.25; sp -= 0.25)
         {
-          for(float sp = 1.0; sp >= 0.25; sp -= 0.25)
-          {
-            motor_str = (m == LEFT)?"esquerdo_":"direito_";
-            sp_str    = std::to_string((int)(s*sp*100));
-            
-            file_name_no_control = std::string("motor_")+motor_str+sp_str+experimento;
-            file_name_control    = std::string("control_motor_")+motor_str+sp_str+experimento;
+          sp_str = std::to_string((int)(s * sp * 100));
 
-            std::cout << file_name_no_control << '\n';
-            std::cout << file_name_control << '\n';
 
-            _reqIdentify(m, s*sp, false,file_name_no_control.c_str());
-            _reqIdentify(m, s*sp, true, file_name_control.c_str());
-          }
+          motor_str = "esquerdo_";
+          file_name_no_control = std::string("motor_") + motor_str + sp_str + experimento;
+          file_name_control = std::string("control_motor_") + motor_str + sp_str + experimento;
+          _reqIdentify(LEFT, s * sp, false, file_name_no_control.c_str());
+          _reqIdentify(LEFT, s * sp, true, file_name_control.c_str());
+          
+          std::cout << file_name_no_control << '\n';
+          std::cout << file_name_control << '\n';
+
+          motor_str = "direito_";
+          file_name_no_control = std::string("motor_") + motor_str + sp_str + experimento;
+          file_name_control = std::string("control_motor_") + motor_str + sp_str + experimento;
+          _reqIdentify(RIGHT, s * sp, false, file_name_no_control.c_str());
+          _reqIdentify(RIGHT, s * sp, true, file_name_control.c_str());
+          
+          std::cout << file_name_no_control << '\n';
+          std::cout << file_name_control << '\n';
         }
       }
-      */
-      _reqIdentify(1, 1.0, true, "control_teste_motor_direito_frente");
-      _reqIdentify(0, 1.0, true, "control_teste_motor_esquerdo_frente");
-      _reqIdentify(1, 1.0, false, "teste_motor_direito_frente");
-      _reqIdentify(0, 1.0, false, "teste_motor_esquerdo_frente");
+
+      // _reqIdentify(1, 1.0, true, "control_teste_motor_direito_frente");
+      // _reqIdentify(0, 1.0, true, "control_teste_motor_esquerdo_frente");
+      // _reqIdentify(1, 1.0, false, "teste_motor_direito_frente");
+      // _reqIdentify(0, 1.0, false, "teste_motor_esquerdo_frente");
       // _reqIdentify(1, 1.0, true, "control_teste_motor_direito_frente");
       // _reqIdentify(1, 1.0, true, "control_teste_motor_direito_frente");
 
