@@ -55,6 +55,8 @@ void BtRemoteCtrl::_manager()
   int choice;
   while (this->running)
   {
+
+    // cin.ignore(256, '\n');
     choice = _mainMenu();
     if (idBt == -1 && (choice != OPTION::_graphic &&
                        choice != OPTION::_connect &&
@@ -89,58 +91,50 @@ void BtRemoteCtrl::_manager()
       _reqAutoCal();
       break;
     case OPTION::_identify: //identificar
+    {
+      std::cout << "Identify!\n";
+      std::string experimento("_experimento_06");
+      std::string motor_str, sp_str;
+      std::string file_name_control, file_name_no_control;
 
-      /*//simple test
-      // _reqIdentify(1,1.0, true, "control_teste_motor_direito_frente");
-      // _reqIdentify(0,1.0, true, "control_teste_motor_esquerdo_frente");
-      
-      // _reqIdentify(1,1.0, false, "teste_motor_direito_frente");
-      // _reqIdentify(0,1.0, false, "teste_motor_esquerdo_frente");
+      for (float s = 1.0; s >= -1.0; s -= 2)
+      {
+        for (float sp = 1.0; sp >= 0.25; sp -= 0.25)
+        {
+          sp_str = std::to_string((int)(s * sp * 100));
+
+
+          motor_str = "esquerdo_";
+          file_name_no_control = std::string("motor_") + motor_str + sp_str + experimento;
+          file_name_control = std::string("control_motor_") + motor_str + sp_str + experimento;
+          _reqIdentify(LEFT, s * sp, false, file_name_no_control.c_str());
+          _reqIdentify(LEFT, s * sp, true, file_name_control.c_str());
+          
+          std::cout << file_name_no_control << '\n';
+          std::cout << file_name_control << '\n';
+
+          motor_str = "direito_";
+          file_name_no_control = std::string("motor_") + motor_str + sp_str + experimento;
+          file_name_control = std::string("control_motor_") + motor_str + sp_str + experimento;
+          _reqIdentify(RIGHT, s * sp, false, file_name_no_control.c_str());
+          _reqIdentify(RIGHT, s * sp, true, file_name_control.c_str());
+          
+          std::cout << file_name_no_control << '\n';
+          std::cout << file_name_control << '\n';
+        }
+      }
+
+      // _reqIdentify(1, 1.0, true, "control_teste_motor_direito_frente");
+      // _reqIdentify(0, 1.0, true, "control_teste_motor_esquerdo_frente");
+      // _reqIdentify(1, 1.0, false, "teste_motor_direito_frente");
+      // _reqIdentify(0, 1.0, false, "teste_motor_esquerdo_frente");
+      // _reqIdentify(1, 1.0, true, "control_teste_motor_direito_frente");
+      // _reqIdentify(1, 1.0, true, "control_teste_motor_direito_frente");
+
+      // _reqIdentify(1, 1.0, false, "teste_motor_direito_frente");
+      // _reqIdentify(0, 1.0, false, "teste_motor_esquerdo_frente");
       // _reqIdentify(1,-1.0, false, "teste_motor_direito_tras");
       // _reqIdentify(0,-1.0, false, "teste_motor_esquerdo_tras");
-      */
-
-      //coleta de dados
-      _reqIdentify(LEFT, 1.0, false, "motor_esquerdo_100_frente");
-      _reqIdentify(LEFT, 0.75, false, "motor_esquerdo_75_frente");
-      _reqIdentify(LEFT, 0.5, false, "motor_esquerdo_50_frente");
-      _reqIdentify(LEFT, 0.25, false, "motor_esquerdo_25_frente");
-
-      _reqIdentify(LEFT, -1.0, false, "motor_esquerdo_100_tras");
-      _reqIdentify(LEFT, -0.75, false, "motor_esquerdo_75_tras");
-      _reqIdentify(LEFT, -0.5, false, "motor_esquerdo_50_tras");
-      _reqIdentify(LEFT, -0.25, false, "motor_esquerdo_25_tras");
-
-      _reqIdentify(RIGHT, 1.0, false, "motor_direito_100_frente");
-      _reqIdentify(RIGHT, 0.75, false, "motor_direito_75_frente");
-      _reqIdentify(RIGHT, 0.5, false, "motor_direito_50_frente");
-      _reqIdentify(RIGHT, 0.25, false, "motor_direito_25_frente");
-
-      _reqIdentify(RIGHT, -1.0, false, "motor_direito_100_tras");
-      _reqIdentify(RIGHT, -0.75, false, "motor_direito_75_tras");
-      _reqIdentify(RIGHT, -0.5, false, "motor_direito_50_tras");
-      _reqIdentify(RIGHT, -0.25, false, "motor_direito_25_tras");
-
-      //com controlador
-      _reqIdentify(LEFT, 1.0, true, "control_motor_esquerdo_100_frente");
-      _reqIdentify(LEFT, 0.75, true, "control_motor_esquerdo_75_frente");
-      _reqIdentify(LEFT, 0.5, true, "control_motor_esquerdo_50_frente");
-      _reqIdentify(LEFT, 0.25, true, "control_motor_esquerdo_25_frente");
-
-      _reqIdentify(LEFT, -1.0, true, "control_motor_esquerdo_100_tras");
-      _reqIdentify(LEFT, -0.75, true, "control_motor_esquerdo_75_tras");
-      _reqIdentify(LEFT, -0.5, true, "control_motor_esquerdo_50_tras");
-      _reqIdentify(LEFT, -0.25, true, "control_motor_esquerdo_25_tras");
-
-      _reqIdentify(RIGHT, 1.0, true, "control_motor_direito_100_frente");
-      _reqIdentify(RIGHT, 0.75, true, "control_motor_direito_75_frente");
-      _reqIdentify(RIGHT, 0.5, true, "control_motor_direito_50_frente");
-      _reqIdentify(RIGHT, 0.25, true, "control_motor_direito_25_frente");
-
-      _reqIdentify(RIGHT, -1.0, true, "control_motor_direito_100_tras");
-      _reqIdentify(RIGHT, -0.75, true, "control_motor_direito_75_tras");
-      _reqIdentify(RIGHT, -0.5, true, "control_motor_direito_50_tras");
-      _reqIdentify(RIGHT, -0.25, true, "control_motor_direito_25_tras");
 
       // _reqIdentify(1,-1.0, true, "control_teste_motor_direito_tras");
       // _reqIdentify(0,-1.0, true, "control_teste_motor_esquerdo_tras");
@@ -151,7 +145,9 @@ void BtRemoteCtrl::_manager()
       //   name = "motor_direito_" + std::to_string(i);
       //   _reqIdentify(1,1.0, false, name.c_str());
       // }
+      _pause();
       break;
+    }
     case OPTION::_graphic: //graficos
       _graphic();
       break;
@@ -325,7 +321,7 @@ void BtRemoteCtrl::_reqIdentify(bool motor, float ref, bool controller, const ch
        << "\n";
   for (int i = 0; i < import.size; i++)
   {
-    if (read_bluetooth((uint8_t *)&import.datas[i], sizeof(export_data_t), 20) == false)
+    if (read_bluetooth((uint8_t *)&import.datas[i], sizeof(export_data_t), 8) == false)
     {
       delete[] import.datas;
       delete[] bitstream;
