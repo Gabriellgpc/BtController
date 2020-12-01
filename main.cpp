@@ -4,7 +4,8 @@
 
 using namespace std;
 
-#define MAC_ESP_TEST   "30:AE:A4:3B:A4:26"
+// #define MAC_ESP_TEST   "30:AE:A4:3B:A4:26"
+#define MAC_ESP_ROBO_0 "30:AE:A4:19:CE:A4"
 #define MAC_ESP_ROBO_1 "30:AE:A4:20:0E:12"
 #define MAC_ESP_ROBO_2 "30:AE:A4:13:F8:AE"
 #define MAC_ESP_ROBO_3 "30:AE:A4:20:0E:12"
@@ -15,7 +16,8 @@ int main()
 {
   BtRemoteCtrl remoteCtrl;
 
-  remoteCtrl.setBluetoothAddr(MAC_ESP_TEST);
+  // remoteCtrl.setBluetoothAddr(MAC_ESP_TEST);
+  remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_0);
   remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_1);
   remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_2);
   remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_3);
