@@ -1,6 +1,6 @@
 CC = g++
 CXX = g++
-CPPFLAGS = -Wall -O2 -fopenmp
+CPPFLAGS = -Wall -O2 -fopenmp -std=c++11
 LDLIBS =  -lbluetooth	-lpthread	-lbluetooth
 
 PROGRAMS	= main
