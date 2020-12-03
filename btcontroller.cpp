@@ -97,6 +97,33 @@ void BtRemoteCtrl::_manager()
       std::string motor_str, sp_str;
       std::string file_name_control, file_name_no_control;
 
+      float sp = 1.0;
+
+      sp_str = std::to_string((int)(sp * 100));
+
+      motor_str = "esquerdo_";
+      file_name_no_control = std::string("motor_") + motor_str + sp_str + experimento;
+      file_name_control = std::string("control_motor_") + motor_str + sp_str + experimento;
+      _reqIdentify(LEFT, sp, false, file_name_no_control.c_str());
+      _reqIdentify(LEFT, sp, true, file_name_control.c_str());
+      
+      std::cout << file_name_no_control << '\n';
+      std::cout << file_name_control << '\n';
+
+      motor_str = "direito_";
+      file_name_no_control = std::string("motor_") + motor_str + sp_str + experimento;
+      file_name_control = std::string("control_motor_") + motor_str + sp_str + experimento;
+      _reqIdentify(RIGHT, sp, false, file_name_no_control.c_str());
+      _reqIdentify(RIGHT, sp, true, file_name_control.c_str());
+      
+      std::cout << file_name_no_control << '\n';
+      std::cout << file_name_control << '\n';
+
+      std::cout << "Identify!\n";
+      std::string experimento("_experimento_09");
+      std::string motor_str, sp_str;
+      std::string file_name_control, file_name_no_control;
+
       float sp = 0.25;
 
       sp_str = std::to_string((int)(sp * 100));
