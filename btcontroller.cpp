@@ -119,13 +119,7 @@ void BtRemoteCtrl::_manager()
       std::cout << file_name_no_control << '\n';
       std::cout << file_name_control << '\n';
 
-      std::cout << "Identify!\n";
-      std::string experimento("_experimento_09");
-      std::string motor_str, sp_str;
-      std::string file_name_control, file_name_no_control;
-
-      float sp = 0.25;
-
+      sp = 0.25;
       sp_str = std::to_string((int)(sp * 100));
 
       motor_str = "esquerdo_";
