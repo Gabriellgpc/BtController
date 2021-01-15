@@ -10,6 +10,7 @@ using namespace std;
 #define MAC_ESP_ROBO_2 "30:AE:A4:13:F8:AE"
 #define MAC_ESP_ROBO_3 "30:AE:A4:20:0E:12"
 #define MAC_ESP_ROBO_4 "30:AE:A4:41:74:F6"
+#define MAC_ESP_ROBO_5 "30:AE:A4:3B:A4:26"
 
 
 int main()
@@ -22,6 +23,7 @@ int main()
   remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_2);
   remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_3);
   remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_4);
+  remoteCtrl.setBluetoothAddr(MAC_ESP_ROBO_5);
 
   remoteCtrl.start();
   cout << "Encerrando conexao e Fechando o programa\n";

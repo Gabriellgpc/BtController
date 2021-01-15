@@ -14,6 +14,7 @@ enum OPTION{
   _ping        = 'P',
   _send_ref    = 'R',
   _send_pwm    = 'S',
+  _send_ki     = 'K',
   _calibration = 'T',
   _identify    = 'I',
   _graphic     = 'V',
@@ -51,6 +52,7 @@ private:
   void _reqPing();
   void _sendRef();
   void _sendPwm();
+  void _sendKi();
   void _reqAutoCal();
   void _reqIdentify(bool motor, float ref = 1.0, bool controller = false,const char* fileName = "output");
   void _graphic();

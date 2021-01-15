@@ -87,6 +87,9 @@ void BtRemoteCtrl::_manager()
     case OPTION::_send_pwm: //omegas sinal de controle
       _sendPwm();
       break;
+    case OPTION::_send_ki: //omegas sinal de controle
+      _sendKi();
+      break;
     case OPTION::_calibration: //calibrar
       _reqAutoCal();
       break;
@@ -209,6 +212,25 @@ void BtRemoteCtrl::_manager()
       break;
     }
   }
+}
+
+void BtRemoteCtrl::_sendKi()
+{
+  const uint16_t mem_size = 1 + sizeof(float);
+  float ki = 0;
+  bitstream = new uint8_t[mem_size];
+  memset(bitstream, 0, mem_size);
+  bitstream[0] = CMD_HEAD | CMD_SET_KI;
+
+  std::cout << "Valor do Ki: ";
+  std::cin >> ki;
+  std::cout << "\nKi = " << ki << '\n';
+
+  memcpy(bitstream+1, (void*)&ki, sizeof(float)*sizeof(uint8_t));
+  sendBluetoothMessage(idBt, bitstream, mem_size*sizeof(uint8_t));
+
+  _pause();
+  delete[] bitstream;
 }
 
 void BtRemoteCtrl::_reqOmegas()
@@ -487,6 +509,7 @@ OPTION BtRemoteCtrl::_mainMenu()
   cout << "************************************\n";
   cout << "R -> ENVIAR REFERÊNCIAS\n";
   cout << "S -> ENVIAR PWM\n";
+  cout << "K -> ALTERAR Ki (*Resetar robo apos usar)\n";
   cout << "************************************\n";
   cout << "T -> AUTO TUNNING\n";
   cout << "I -> IDENTIFICAÇÃO\n";
@@ -513,6 +536,7 @@ void BtRemoteCtrl::_printParameters(const parameters_t parameters[]) const
   printf("Right Back   => a = %f , b = %f \n", parameters[1].coef[1].ang, parameters[1].coef[1].lin);
   printf("Left  Kp_frente = %.12f, Kp_tras %.12f\n", parameters[0].Kp[0], parameters[0].Kp[1]);
   printf("Right Kp_frente = %.12f, Kp_tras %.12f\n", parameters[1].Kp[0], parameters[1].Kp[1]);
+  printf("Ki = %.12f\n", parameters[0].Ki);
   printf("Left  K = %.12f\n", parameters[0].K);
   printf("Right K = %.12f\n", parameters[1].K);
   printf("Left  tau = %.12f\n", parameters[0].tau);
